@@ -1,2011 +1,460 @@
 <!DOCTYPE html>
 <html lang="sv">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Commodore 64 – Såldes till barn för att möta en "Bot"</title>
-    <meta name="description"
-        content="Upptäck historien om hur Commodore 64 (VIC 64) lanserades i Sverige av Handic Electronic AB våren 1983, hur prissänkningen inför julhandeln startade datorfebern, och hur mötet med de första enkla 'botarna' lade grunden för dagens överlägsna AI-modeller.">
-
-    <!-- Google Fonts: Retro 8-bit & Modern Typography -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Press+Start+2P&family=VT323&display=swap"
-        rel="stylesheet">
-
-    <style>
-        :root {
-            /* Commodore 64 Classic & Cyber Synth Palette */
-            --c64-dark-blue: #0b091a;
-            --c64-navy: #15122e;
-            --c64-card-bg: rgba(26, 22, 54, 0.78);
-            --c64-border: rgba(108, 94, 181, 0.35);
-            --c64-purple: #3b3181;
-            --c64-blue-classic: #4f44a0;
-            --c64-light-blue: #6c5eb5;
-            --c64-cyan: #5ce1e6;
-            --c64-green: #8be28a;
-            --c64-amber: #ffbe3b;
-            --c64-pink: #ff3377;
-            --c64-white: #e9e8ff;
-            --c64-gray: #9ba0bc;
-            --c64-terminal-bg: #352879;
-            --c64-terminal-border: #6c5eb5;
-            --glow-cyan: 0 0 15px rgba(92, 225, 230, 0.55);
-            --glow-pink: 0 0 18px rgba(255, 51, 119, 0.6);
-            --glow-amber: 0 0 15px rgba(255, 190, 59, 0.5);
-            --font-pixel: 'Press Start 2P', monospace;
-            --font-term: 'VT323', monospace;
-            --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: var(--c64-dark-blue);
-            color: var(--c64-white);
-            font-family: var(--font-main);
-            line-height: 1.6;
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* Ambient animated pixel stars / grid */
-        #ambient-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.65;
-        }
-
-        /* Optional CRT Simulation Layer */
-        .crt-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            z-index: 999;
-            transition: opacity 0.3s ease;
-            opacity: 0;
-        }
-
-        body.crt-active .crt-overlay {
-            opacity: 1;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.38) 50%),
-                linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-            background-size: 100% 3px, 6px 100%;
-            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.75);
-        }
-
-        body.crt-active {
-            text-shadow: 0 0 1px rgba(92, 225, 230, 0.45);
-        }
-
-        /* Quick controls HUD floating bar */
-        .hud-controls {
-            position: fixed;
-            top: 14px;
-            right: 18px;
-            z-index: 1000;
-            display: flex;
-            gap: 10px;
-            background: rgba(14, 11, 31, 0.85);
-            border: 1px solid var(--c64-border);
-            padding: 7px 12px;
-            border-radius: 30px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .hud-btn {
-            background: transparent;
-            border: 1px solid rgba(108, 94, 181, 0.5);
-            color: var(--c64-white);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-family: var(--font-pixel);
-            font-size: 0.62rem;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s ease;
-        }
-
-        .hud-btn:hover {
-            background: var(--c64-purple);
-            border-color: var(--c64-cyan);
-            box-shadow: var(--glow-cyan);
-            transform: translateY(-1px);
-        }
-
-        .hud-btn.active {
-            background: var(--c64-light-blue);
-            border-color: var(--c64-cyan);
-            color: #fff;
-        }
-
-        .led-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #444;
-            display: inline-block;
-        }
-
-        .led-dot.on {
-            background: var(--c64-green);
-            box-shadow: 0 0 8px var(--c64-green);
-        }
-
-        /* Container layout */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
-            position: relative;
-            z-index: 2;
-        }
-
-        /* C64 BOOT TERMINAL HEADER */
-        .c64-boot-screen {
-            background: var(--c64-terminal-bg);
-            border: 12px solid var(--c64-terminal-border);
-            border-radius: 12px;
-            padding: 24px;
-            margin: 70px auto 35px auto;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7), inset 0 0 25px rgba(0, 0, 0, 0.4);
-            color: var(--c64-light-blue);
-            font-family: var(--font-pixel);
-            font-size: 0.8rem;
-            line-height: 1.9;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .c64-boot-screen::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at center, transparent 65%, rgba(0, 0, 0, 0.4) 100%);
-            pointer-events: none;
-        }
-
-        .c64-header-text {
-            color: #a59dec;
-            text-align: center;
-            margin-bottom: 12px;
-            letter-spacing: 1px;
-        }
-
-        .c64-line {
-            margin-bottom: 6px;
-            color: #7b71c7;
-        }
-
-        .c64-highlight {
-            color: var(--c64-cyan);
-            text-shadow: 0 0 8px rgba(92, 225, 230, 0.6);
-        }
-
-        .c64-blink-cursor {
-            display: inline-block;
-            width: 11px;
-            height: 13px;
-            background-color: #a59dec;
-            vertical-align: middle;
-            animation: blink 0.9s infinite;
-        }
-
-        @keyframes blink {
-
-            0%,
-            49% {
-                opacity: 1;
-            }
-
-            50%,
-            100% {
-                opacity: 0;
-            }
-        }
-
-        /* HERO SECTION */
-        .hero-section {
-            text-align: center;
-            padding: 30px 0 50px 0;
-        }
-
-        .badge-bar {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 22px;
-        }
-
-        .retro-badge {
-            background: rgba(43, 36, 92, 0.7);
-            border: 1px solid var(--c64-light-blue);
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: var(--c64-cyan);
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            letter-spacing: 0.5px;
-        }
-
-        .retro-badge.gold {
-            border-color: var(--c64-amber);
-            color: var(--c64-amber);
-        }
-
-        .retro-badge.pink {
-            border-color: var(--c64-pink);
-            color: #ff85ad;
-        }
-
-        h1.hero-title {
-            font-size: clamp(2.1rem, 5vw, 3.8rem);
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            line-height: 1.15;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #ffffff 0%, #a29bfe 50%, #5ce1e6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 10px 30px rgba(92, 225, 230, 0.2);
-        }
-
-        .hero-subtitle {
-            font-size: clamp(1.1rem, 2.3vw, 1.45rem);
-            color: var(--c64-gray);
-            max-width: 860px;
-            margin: 0 auto 35px auto;
-            font-weight: 400;
-        }
-
-        .hero-subtitle strong {
-            color: #ffffff;
-        }
-
-        .hero-visual-card {
-            position: relative;
-            border-radius: 20px;
-            overflow: hidden;
-            border: 2px solid var(--c64-border);
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(108, 94, 181, 0.3);
-            margin-bottom: 55px;
-            background: #000;
-        }
-
-        .hero-visual-card img {
-            width: 100%;
-            height: auto;
-            display: block;
-            transition: transform 0.6s ease;
-        }
-
-        .hero-visual-card:hover img {
-            transform: scale(1.02);
-        }
-
-        .hero-caption {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 24px 30px;
-            background: linear-gradient(to top, rgba(11, 9, 26, 0.95) 15%, transparent 100%);
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            flex-wrap: wrap;
-            gap: 15px;
-            text-align: left;
-        }
-
-        .hero-caption-title {
-            font-family: var(--font-pixel);
-            font-size: 0.85rem;
-            color: var(--c64-amber);
-            margin-bottom: 6px;
-        }
-
-        .hero-caption-sub {
-            font-size: 0.95rem;
-            color: var(--c64-white);
-            max-width: 650px;
-        }
-
-        .hero-caption-btn {
-            background: linear-gradient(135deg, var(--c64-pink), var(--c64-purple));
-            border: none;
-            color: #fff;
-            font-family: var(--font-pixel);
-            font-size: 0.72rem;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: var(--glow-pink);
-            transition: all 0.25s ease;
-        }
-
-        .hero-caption-btn:hover {
-            transform: translateY(-2px);
-            filter: brightness(1.2);
-        }
-
-        /* STATS & METRICS GRID */
-        .section-header {
-            text-align: center;
-            margin-bottom: 35px;
-        }
-
-        .section-tag {
-            font-family: var(--font-pixel);
-            font-size: 0.7rem;
-            color: var(--c64-cyan);
-            letter-spacing: 1px;
-            display: block;
-            margin-bottom: 10px;
-        }
-
-        .section-title {
-            font-size: clamp(1.8rem, 3.5vw, 2.6rem);
-            font-weight: 700;
-            color: #fff;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 22px;
-            margin-bottom: 50px;
-        }
-
-        .stat-card {
-            background: var(--c64-card-bg);
-            border: 1px solid var(--c64-border);
-            border-radius: 16px;
-            padding: 28px 24px;
-            position: relative;
-            overflow: hidden;
-            backdrop-filter: blur(12px);
-            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--c64-cyan);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), var(--glow-cyan);
-        }
-
-        .stat-card::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: var(--c64-cyan);
-        }
-
-        .stat-card.card-pink::before {
-            background: var(--c64-pink);
-        }
-
-        .stat-card.card-amber::before {
-            background: var(--c64-amber);
-        }
-
-        .stat-card.card-green::before {
-            background: var(--c64-green);
-        }
-
-        .stat-card-label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--c64-gray);
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 10px;
-        }
-
-        .stat-card-value {
-            font-family: var(--font-pixel);
-            font-size: 1.6rem;
-            color: #fff;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: baseline;
-            gap: 6px;
-        }
-
-        .stat-card-value .unit {
-            font-size: 0.85rem;
-            color: var(--c64-cyan);
-            font-family: var(--font-main);
-            font-weight: 700;
-        }
-
-        .stat-card-desc {
-            font-size: 0.92rem;
-            color: #d1d5eb;
-            line-height: 1.5;
-        }
-
-        /* INTERACTIVE PRICE CALCULATOR CARD */
-        .calc-box {
-            background: linear-gradient(145deg, rgba(31, 26, 68, 0.9), rgba(18, 15, 41, 0.9));
-            border: 1px solid var(--c64-light-blue);
-            border-radius: 18px;
-            padding: 32px;
-            margin-bottom: 60px;
-            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6);
-        }
-
-        .calc-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .calc-title {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .calc-flex {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 25px;
-            align-items: center;
-        }
-
-        .calc-slider-group {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .calc-slider-group label {
-            font-size: 0.95rem;
-            color: var(--c64-gray);
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .calc-slider-group input[type="range"] {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 8px;
-            border-radius: 5px;
-            background: #2b2554;
-            outline: none;
-        }
-
-        .calc-slider-group input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            background: var(--c64-cyan);
-            cursor: pointer;
-            box-shadow: var(--glow-cyan);
-        }
-
-        .calc-result-box {
-            background: rgba(11, 9, 26, 0.75);
-            border: 1px dashed var(--c64-cyan);
-            border-radius: 12px;
-            padding: 22px;
-            text-align: center;
-        }
-
-        .calc-result-number {
-            font-family: var(--font-pixel);
-            font-size: 1.6rem;
-            color: var(--c64-amber);
-            margin: 8px 0;
-        }
-
-        .calc-result-note {
-            font-size: 0.85rem;
-            color: var(--c64-gray);
-        }
-
-        /* STORY CHAPTERS / NARRATIVE CARDS */
-        .story-section {
-            margin-bottom: 60px;
-        }
-
-        .chapter-card {
-            background: var(--c64-card-bg);
-            border: 1px solid var(--c64-border);
-            border-radius: 18px;
-            padding: 36px;
-            margin-bottom: 28px;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
-            position: relative;
-        }
-
-        .chapter-num {
-            position: absolute;
-            top: 24px;
-            right: 28px;
-            font-family: var(--font-pixel);
-            font-size: 2.2rem;
-            color: rgba(108, 94, 181, 0.18);
-            user-select: none;
-        }
-
-        .chapter-tag {
-            font-family: var(--font-pixel);
-            font-size: 0.65rem;
-            color: var(--c64-pink);
-            margin-bottom: 12px;
-            display: inline-block;
-        }
-
-        .chapter-title {
-            font-size: 1.65rem;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 18px;
-        }
-
-        .chapter-body {
-            font-size: 1.05rem;
-            color: #cfd4eb;
-            line-height: 1.75;
-        }
-
-        .chapter-body p {
-            margin-bottom: 16px;
-        }
-
-        .chapter-body p:last-child {
-            margin-bottom: 0;
-        }
-
-        .quote-box {
-            border-left: 3px solid var(--c64-cyan);
-            padding: 14px 20px;
-            background: rgba(92, 225, 230, 0.06);
-            border-radius: 0 12px 12px 0;
-            margin: 18px 0;
-            font-style: italic;
-            color: #e0f8ff;
-        }
-
-        /* ARCADE PLAYABLE MINI-GAME MODULE */
-        .arcade-section {
-            background: #090716;
-            border: 3px solid var(--c64-light-blue);
-            border-radius: 24px;
-            padding: 34px;
-            margin-bottom: 60px;
-            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(79, 68, 160, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .arcade-header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        .arcade-header h2 {
-            font-family: var(--font-pixel);
-            font-size: clamp(1.2rem, 2.5vw, 1.8rem);
-            color: var(--c64-cyan);
-            text-shadow: var(--glow-cyan);
-            margin-bottom: 10px;
-        }
-
-        .arcade-header p {
-            color: var(--c64-gray);
-            font-size: 0.95rem;
-        }
-
-        /* Mode selector tabs */
-        .game-mode-bar {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .mode-btn {
-            background: rgba(26, 22, 54, 0.9);
-            border: 2px solid var(--c64-border);
-            color: var(--c64-white);
-            padding: 10px 18px;
-            border-radius: 10px;
-            font-family: var(--font-pixel);
-            font-size: 0.7rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.25s ease;
-        }
-
-        .mode-btn:hover {
-            border-color: var(--c64-cyan);
-            box-shadow: var(--glow-cyan);
-        }
-
-        .mode-btn.active-mode {
-            background: var(--c64-purple);
-            border-color: var(--c64-cyan);
-            color: var(--c64-cyan);
-            box-shadow: var(--glow-cyan);
-        }
-
-        .mode-btn.modern.active-mode {
-            background: #460f2b;
-            border-color: var(--c64-pink);
-            color: #ff759d;
-            box-shadow: var(--glow-pink);
-        }
-
-        /* Game frame & Canvas */
-        .game-viewport {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: #000;
-            border: 4px solid #201a45;
-            border-radius: 14px;
-            padding: 16px;
-            position: relative;
-        }
-
-        .game-scoreboard {
-            width: 100%;
-            max-width: 720px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-family: var(--font-pixel);
-            font-size: 0.85rem;
-            padding: 8px 14px;
-            margin-bottom: 12px;
-            background: rgba(26, 22, 54, 0.7);
-            border-radius: 8px;
-        }
-
-        .score-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .score-val {
-            font-size: 1.2rem;
-            color: var(--c64-amber);
-        }
-
-        #pongCanvas {
-            background: #0a081a;
-            border: 2px solid var(--c64-terminal-border);
-            border-radius: 8px;
-            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9), 0 0 20px rgba(92, 225, 230, 0.25);
-            max-width: 100%;
-            height: auto;
-            cursor: crosshair;
-        }
-
-        /* Bot Commentary Terminal under Canvas */
-        .bot-chatter-box {
-            width: 100%;
-            max-width: 720px;
-            background: #110e26;
-            border: 1px solid var(--c64-border);
-            border-radius: 8px;
-            padding: 12px 18px;
-            margin-top: 14px;
-            font-family: var(--font-term);
-            font-size: 1.25rem;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            min-height: 48px;
-        }
-
-        .bot-avatar {
-            font-family: var(--font-pixel);
-            font-size: 0.65rem;
-            padding: 4px 8px;
-            border-radius: 4px;
-            background: var(--c64-purple);
-            color: var(--c64-cyan);
-        }
-
-        .bot-avatar.modern {
-            background: #73123b;
-            color: #ff94b8;
-        }
-
-        .bot-chatter-text {
-            color: #a3f7bf;
-            flex-grow: 1;
-        }
-
-        .game-actions-bar {
-            margin-top: 16px;
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .game-ctrl-btn {
-            background: linear-gradient(135deg, var(--c64-blue-classic), var(--c64-purple));
-            border: 1px solid var(--c64-cyan);
-            color: #fff;
-            font-family: var(--font-pixel);
-            font-size: 0.72rem;
-            padding: 10px 18px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .game-ctrl-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--glow-cyan);
-        }
-
-        /* ELEVENS REFLEKTIONER & POLL SECTION */
-        .reflection-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 24px;
-            margin-bottom: 50px;
-        }
-
-        .reflection-card {
-            background: var(--c64-card-bg);
-            border: 1px solid var(--c64-border);
-            border-radius: 18px;
-            padding: 30px;
-            backdrop-filter: blur(12px);
-            position: relative;
-        }
-
-        .reflection-icon {
-            font-size: 2.2rem;
-            margin-bottom: 16px;
-            display: inline-block;
-        }
-
-        .reflection-title {
-            font-size: 1.35rem;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 12px;
-        }
-
-        .reflection-text {
-            color: #d1d5eb;
-            font-size: 0.98rem;
-            line-height: 1.7;
-        }
-
-        /* INTERACTIVE POLL CARD */
-        .poll-card {
-            background: linear-gradient(145deg, rgba(29, 24, 62, 0.9), rgba(18, 14, 40, 0.9));
-            border: 2px solid var(--c64-amber);
-            border-radius: 20px;
-            padding: 34px;
-            margin-bottom: 60px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 25px rgba(255, 190, 59, 0.2);
-            text-align: center;
-        }
-
-        .poll-title {
-            font-size: 1.55rem;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 10px;
-        }
-
-        .poll-sub {
-            color: var(--c64-gray);
-            margin-bottom: 24px;
-            font-size: 0.98rem;
-        }
-
-        .poll-options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 16px;
-            max-width: 720px;
-            margin: 0 auto 24px auto;
-        }
-
-        .poll-btn {
-            background: rgba(14, 11, 31, 0.85);
-            border: 2px solid var(--c64-light-blue);
-            border-radius: 14px;
-            padding: 18px 20px;
-            color: #ffffff;
-            font-size: 1.05rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.25s ease;
-        }
-
-        .poll-btn span.emoji {
-            font-size: 1.8rem;
-        }
-
-        .poll-btn:hover {
-            border-color: var(--c64-cyan);
-            transform: translateY(-3px);
-            box-shadow: var(--glow-cyan);
-        }
-
-        .poll-btn.voted {
-            border-color: var(--c64-green);
-            background: rgba(139, 226, 138, 0.15);
-            box-shadow: 0 0 18px rgba(139, 226, 138, 0.4);
-        }
-
-        .poll-bars {
-            max-width: 650px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            text-align: left;
-        }
-
-        .poll-bar-item {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .poll-bar-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.88rem;
-            color: var(--c64-white);
-        }
-
-        .poll-track {
-            width: 100%;
-            height: 14px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .poll-fill {
-            height: 100%;
-            border-radius: 10px;
-            transition: width 0.8s cubic-bezier(0.1, 1, 0.1, 1);
-        }
-
-        .poll-fill.human {
-            background: linear-gradient(90deg, var(--c64-cyan), var(--c64-green));
-        }
-
-        .poll-fill.ai {
-            background: linear-gradient(90deg, var(--c64-pink), var(--c64-amber));
-        }
-
-        /* INTERACTIVE C64 MINI-TERMINAL */
-        .terminal-section {
-            background: var(--c64-terminal-bg);
-            border: 10px solid var(--c64-terminal-border);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 60px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
-            font-family: var(--font-pixel);
-            font-size: 0.78rem;
-            color: #a59dec;
-        }
-
-        .terminal-title {
-            color: var(--c64-cyan);
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .terminal-output {
-            min-height: 140px;
-            max-height: 240px;
-            overflow-y: auto;
-            background: rgba(10, 8, 26, 0.45);
-            border: 1px solid rgba(165, 157, 236, 0.3);
-            border-radius: 6px;
-            padding: 12px;
-            line-height: 1.8;
-            margin-bottom: 14px;
-            color: #c7c2ff;
-        }
-
-        .term-out-line {
-            margin-bottom: 4px;
-        }
-
-        .term-out-line.user-cmd {
-            color: var(--c64-cyan);
-        }
-
-        .term-out-line.sys-reply {
-            color: var(--c64-white);
-        }
-
-        .terminal-input-row {
-            display: flex;
-            gap: 10px;
-        }
-
-        .terminal-prompt {
-            color: var(--c64-cyan);
-            font-weight: bold;
-            align-self: center;
-        }
-
-        .terminal-input {
-            flex-grow: 1;
-            background: rgba(10, 8, 26, 0.7);
-            border: 1px solid var(--c64-light-blue);
-            border-radius: 4px;
-            padding: 8px 12px;
-            color: #fff;
-            font-family: var(--font-pixel);
-            font-size: 0.75rem;
-            outline: none;
-        }
-
-        .terminal-input:focus {
-            border-color: var(--c64-cyan);
-            box-shadow: var(--glow-cyan);
-        }
-
-        .terminal-quick-buttons {
-            margin-top: 12px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .term-btn {
-            background: rgba(43, 36, 92, 0.7);
-            border: 1px solid var(--c64-light-blue);
-            color: var(--c64-cyan);
-            font-family: var(--font-pixel);
-            font-size: 0.6rem;
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .term-btn:hover {
-            background: var(--c64-purple);
-            color: #fff;
-        }
-
-        /* FOOTER */
-        footer {
-            border-top: 1px solid var(--c64-border);
-            padding: 40px 0 60px 0;
-            text-align: center;
-            color: var(--c64-gray);
-            font-size: 0.9rem;
-        }
-
-        footer a {
-            color: var(--c64-cyan);
-            text-decoration: none;
-        }
-
-        footer a:hover {
-            text-decoration: underline;
-        }
-
-        .footer-tribute {
-            font-family: var(--font-pixel);
-            font-size: 0.68rem;
-            color: #8c85c7;
-            margin-bottom: 12px;
-        }
-
-        /* RESPONSIVE TWEAKS */
-        @media (max-width: 768px) {
-            .c64-boot-screen {
-                font-size: 0.65rem;
-                padding: 16px;
-                margin-top: 60px;
-            }
-
-            .chapter-card {
-                padding: 24px;
-            }
-
-            .hud-controls {
-                top: auto;
-                bottom: 14px;
-                right: 50%;
-                transform: translateX(50%);
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Commodore 64 – När Barnen Mötte "Boten" (1983–1984)</title>
+  <!-- Google Fonts: VT323 & Press Start 2P for authentic C64 retro look -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
+<body class="theme-c64 crt-scanlines crt-glow crt-curve">
 
-<body>
+  <!-- TOP HARDWARE BAR -->
+  <header class="hardware-top-bar">
+    <div class="c64-badge">
+      <div class="c64-rainbow">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <span class="badge-title">COMMODORE 64 <span class="badge-sub">SWEDEN EDITION 1983</span></span>
+    </div>
 
-    <!-- Ambient starfield canvas -->
-    <canvas id="ambient-canvas"></canvas>
+    <div class="control-panel">
+      <!-- CRT Controls -->
+      <button id="btn-scanlines" class="ctrl-btn active" title="Växla Scanlines">📺 SCANLINES: PÅ</button>
+      <button id="btn-curve" class="ctrl-btn active" title="Växla CRT Krökning">🔲 CRT GLAS: PÅ</button>
+      <button id="btn-flicker" class="ctrl-btn active" title="Växla CRT Flimmer">⚡ FLIMMER: PÅ</button>
+      
+      <!-- Color Scheme -->
+      <div class="theme-selector">
+        <label for="theme-select">FÄRGLÄGE:</label>
+        <select id="theme-select">
+          <option value="theme-c64">C64 Klassisk Blå</option>
+          <option value="theme-green">Grön Fosfor (P1)</option>
+          <option value="theme-amber">Bärnsten Fosfor (P3)</option>
+          <option value="theme-cyber">Cyberpunk 1984</option>
+        </select>
+      </div>
 
-    <!-- CRT overlay scanlines -->
-    <div class="crt-overlay" id="crtOverlay"></div>
+      <!-- Sound System -->
+      <button id="btn-audio" class="ctrl-btn audio-btn" title="Slå på/av SID 6581 Chiptune Ljud">
+        <span class="audio-icon">🔇</span> SID-LJUD: AV
+      </button>
+    </div>
+  </header>
 
-    <!-- HUD floating controls -->
-    <aside class="hud-controls" aria-label="Webbplatsens kontroller">
-        <button class="hud-btn" id="toggleSoundBtn" title="Slå på/av 8-bitars SID-ljud">
-            <span class="led-dot" id="soundLed"></span> 🔊 LJUD: AV
-        </button>
-        <button class="hud-btn" id="toggleCrtBtn" title="Slå på/av CRT-skärmfilter">
-            <span class="led-dot" id="crtLed"></span> 📺 CRT: AV
-        </button>
-        <a href="#arcadeModule" class="hud-btn" id="jumpGameBtn" style="text-decoration:none;">
-            🎮 SPELA BOT
-        </a>
-    </aside>
+  <!-- MAIN CRT MONITOR FRAME -->
+  <div class="crt-monitor-container">
+    <div class="crt-screen-bezel">
+      
+      <!-- CRT GLASS SCREEN -->
+      <main class="crt-screen" id="crtScreen">
+        
+        <!-- CRT SCREEN OVERLAYS -->
+        <div class="crt-scanline-overlay"></div>
+        <div class="crt-vignette-overlay"></div>
+        <div class="crt-flicker-overlay"></div>
 
-    <main class="container">
+        <!-- SCREEN CONTENT WRAPPER -->
+        <div class="screen-content">
 
-        <!-- C64 BOOT SEQUENCE TERMINAL -->
-        <section class="c64-boot-screen" aria-label="Commodore 64 Startsekvens">
-            <div class="c64-header-text">**** COMMODORE 64 BASIC V2 ****</div>
-            <div class="c64-header-text">64K RAM SYSTEM 38911 BASIC BYTES FREE</div>
-            <div class="c64-line">READY.</div>
-            <div class="c64-line">LOAD "HANDIC_VIC64_1983",8,1</div>
-            <div class="c64-line">SEARCHING FOR HANDIC_VIC64_1983</div>
-            <div class="c64-line">LOADING ... <span class="c64-highlight">KLAR!</span></div>
-            <div class="c64-line">SYS 2026 : INITIATING FIRST BOT ENCOUNTER... <span class="c64-blink-cursor"></span>
+          <!-- BOOT BANNER / INTRO -->
+          <section class="c64-boot-section">
+            <div class="c64-boot-header">
+              <pre class="boot-text">
+    **** COMMODORE 64 BASIC V2 ****
+
+ 64K RAM SYSTEM  38911 BASIC BYTES FREE
+
+READY.
+<span class="typing-target">LOAD "BOT_REVOLUTION_1983",8,1</span>
+SEARCHING FOR BOT_REVOLUTION_1983
+LOADING
+READY.
+<span class="command-run">RUN</span>
+              </pre>
             </div>
-        </section>
+          </section>
 
-        <!-- HERO SECTION -->
-        <header class="hero-section">
-            <div class="badge-bar">
-                <span class="retro-badge">🇸🇪 Handic Electronic AB</span>
-                <span class="retro-badge gold">📅 Våren 1983: VIC 64</span>
-                <span class="retro-badge pink">🤖 De Första Botarna</span>
-                <span class="retro-badge">⚡ 64 Kilobyte Revolution</span>
+          <!-- HERO HEADER -->
+          <header class="hero-header">
+            <div class="hero-title-box">
+              <h1 class="glitch-text" data-text="COMMODORE 64: MÖTET MED BOTEN">COMMODORE 64: MÖTET MED BOTEN</h1>
+              <p class="hero-subtitle">NÄR EN DATOR SÅLDES TILL BARN FÖR ATT UTMANA EN "AI" PÅ 80-TALET</p>
             </div>
-
-            <h1 class="hero-title">Commodore 64: Datorn som såldes till barn för att möta en "Bot"</h1>
-
-            <p class="hero-subtitle">
-                Historien om hur en beigegrå låda med 64 kilobyte minne erövrade Sverige, lade grunden för vår
-                datorfeber och introducerade oss för den första digitala motståndaren – maskinen som aldrig sov.
-            </p>
-
-            <!-- HERO VISUAL CARD -->
-            <article class="hero-visual-card" id="heroVisual">
-                <img src="c64_ai_bot.jpg"
-                    alt="Commodore 64 dator med glödande CRT-skärm som visar ett pixelkonst-AI-ansikte och texten HELLO HUMAN"
-                    id="heroImage">
-                <div class="hero-caption">
-                    <div>
-                        <div class="hero-caption-title">★ MOS 6510 &bull; 0.985 MHz &bull; SID 6581 ★</div>
-                        <div class="hero-caption-sub">
-                            Datorn som förvandlade svenska pojk- och flickrum till futuristiska arenor där man plötsligt
-                            kunde möta en tänkande maskin.
-                        </div>
-                    </div>
-                    <button class="hero-caption-btn" id="startHeroDuelBtn"
-                        onclick="document.getElementById('arcadeModule').scrollIntoView({behavior: 'smooth'})">
-                        ⚔️ UTMANA BOTTEN NU
-                    </button>
-                </div>
-            </article>
-        </header>
-
-        <!-- HISTORISKA METRIKER & STATISTIK -->
-        <section aria-labelledby="statsHeading">
-            <div class="section-header">
-                <span class="section-tag">// SIFFRORNA SOM SKREV HISTORIA</span>
-                <h2 class="section-title" id="statsHeading">Från Svensk Lansering till Världssuccé</h2>
+            <div class="hero-taglines">
+              <span class="tag">HANDIC ELECTRONIC AB</span>
+              <span class="tag">VÅREN 1983: VIC 64</span>
+              <span class="tag">MOS 6510 @ 0.985 MHz</span>
+              <span class="tag">SID 6581 LJUDCHIPP</span>
             </div>
+          </header>
 
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-card-label">Våren 1983 &bull; Lansering</div>
-                    <div class="stat-card-value">5 995 <span class="unit">SEK</span></div>
-                    <p class="stat-card-desc">
-                        Handic Electronic AB i Sverige introducerar maskinen under namnet <strong>VIC 64</strong>. Ett
-                        rejält lyxpris på sin tid, men intresset var enormt.
-                    </p>
-                </div>
-
-                <div class="stat-card card-amber">
-                    <div class="stat-card-label">Julhandeln 1983 &bull; Prisras</div>
-                    <div class="stat-card-value">3 995 <span class="unit">SEK</span></div>
-                    <p class="stat-card-desc">
-                        Priset kapades drastiskt med tvåtusen kronor inför julen. Plötsligt stod Commodore 64 överst på
-                        varje barns önskelista till tomten.
-                    </p>
-                </div>
-
-                <div class="stat-card card-green">
-                    <div class="stat-card-label">Svenska Hem</div>
-                    <div class="stat-card-value">100 000 <span class="unit">Exemplar</span></div>
-                    <p class="stat-card-desc">
-                        Över hundratusen maskiner såldes i Sverige. Commodore 64 blev landets i särklass mest älskade
-                        och inflytelserika hemdator.
-                    </p>
-                </div>
-
-                <div class="stat-card card-pink">
-                    <div class="stat-card-label">År 1984 &bull; Global Explosion</div>
-                    <div class="stat-card-value">2,4 <span class="unit">Miljoner ex</span></div>
-                    <p class="stat-card-desc">
-                        Bara under 1984 såldes 2,4 miljoner enheter världen över. C64 blev tidernas mest sålda enskilda
-                        datormodell i historien!
-                    </p>
-                </div>
+          <!-- INTRO CALLOUT -->
+          <article class="c64-panel panel-intro">
+            <div class="panel-header">
+              <span class="panel-title">[ DATORHISTORISK INSIKT // SVERIGE 1983 ]</span>
+              <span class="led-indicator green blink"></span>
             </div>
+            <div class="panel-body">
+              <p class="highlight-lead">
+                <strong>Våren 1983</strong> förändrades de svenska pojk- och flickrummen för alltid. 
+                Genom det svenska företaget <em>Handic Electronic AB</em> lanserades datorn under sitt ursprungliga namn 
+                <span class="c64-yellow">"VIC 64"</span> för det rejäla priset av <strong>5 995 kr</strong>.
+              </p>
+              <p>
+                Men det var när den legendariska <strong>"Julhandeln 1983"</strong> drog igång och priset sänktes till 
+                <span class="c64-green">3 995 kr</span> som explosionen skedde. 
+                I Sverige såldes otroliga <strong>100 000 exemplar</strong>, och bara ett år senare, 
+                <strong>1984</strong>, exploderade den globala marknaden till hisnande <strong>2,4 miljoner sålda enheter</strong>! 
+                Commodore 64 blev den mest kända datorn man någonsin kunde möta.
+              </p>
+            </div>
+          </article>
 
-            <!-- INTERAKTIV PRIS- & MINNESKALKYLATOR -->
-            <article class="calc-box">
-                <div class="calc-header">
-                    <div class="calc-title">
-                        <span>🧮</span> Inflations- & Minneskollen: 1983 vs Idag
-                    </div>
-                    <span class="retro-badge">Dra i reglaget för att jämföra</span>
+          <!-- INTERACTIVE SECTION 1: PRICE & SALES TIMELINE -->
+          <section class="interactive-grid">
+            
+            <!-- PRISRAS-KALKYLATOR -->
+            <div class="c64-panel">
+              <div class="panel-header">
+                <span class="panel-title">PRISUTVECKLING & JULHANDEL 1983</span>
+              </div>
+              <div class="panel-body">
+                <p>Dra i reglaget för att se prissänkningen och vad det motsvarar i dagens penningvärde:</p>
+                
+                <div class="price-slider-wrap">
+                  <div class="slider-labels">
+                    <span>VÅR 1983 (Lansering)</span>
+                    <span>JULHANDEL 1983</span>
+                  </div>
+                  <input type="range" id="priceRange" min="0" max="1" step="1" value="0" class="c64-range">
                 </div>
 
-                <div class="calc-flex">
-                    <div class="calc-slider-group">
-                        <label for="priceSlider">
-                            <span>Välj inköpspris 1983:</span>
-                            <strong id="sliderPriceLabel" style="color:var(--c64-cyan);">5 995 kr</strong>
-                        </label>
-                        <input type="range" id="priceSlider" min="1995" max="7995" step="100" value="5995">
-                        <p style="font-size:0.85rem; color:var(--c64-gray);">
-                            Standard: 5 995 kr (Lanseringspris) eller 3 995 kr (Julhandeln 1983).
-                        </p>
-                    </div>
-
-                    <div class="calc-result-box">
-                        <div style="font-size:0.85rem; color:var(--c64-gray);">Motsvarar i dagens penningvärde (~2026):
-                        </div>
-                        <div class="calc-result-number" id="adjustedPriceDisplay">~ 17 850 kr</div>
-                        <div class="calc-result-note" id="techCompareDisplay">
-                            För 64 Kilobyte RAM! Din smartphone idag har ~125 000 gånger mer arbetsminne.
-                        </div>
-                    </div>
+                <div class="price-display-card" id="priceDisplayCard">
+                  <div class="price-period" id="pricePeriod">VÅREN 1983: VIC 64 LANSERING</div>
+                  <div class="price-val" id="priceValue">5 995 SEK</div>
+                  <div class="price-context" id="priceContext">
+                    Motsvarar ca <strong>16 800 kr</strong> i dagens penningvärde (2024/2026). En enorm investering för en familj!
+                  </div>
                 </div>
-            </article>
-        </section>
 
-        <!-- BERÄTTELSEN & REFLEKTIONEN -->
-        <section class="story-section" aria-labelledby="storyHeading">
-            <div class="section-header">
-                <span class="section-tag">// HISTORIEN BAKOM MASKINEN</span>
-                <h2 class="section-title" id="storyHeading">När Spelaren Mötte Koden</h2>
+                <div class="bargain-meter">
+                  <span>Prissänkning i Julhandeln: </span>
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: 33.3%;"></div>
+                  </div>
+                  <span class="c64-green">-33.3% RABATT (-2000 KR)</span>
+                </div>
+              </div>
             </div>
 
-            <!-- Kapitel 1 -->
-            <article class="chapter-card">
-                <div class="chapter-num">01</div>
-                <span class="chapter-tag">VÅREN 1983 &bull; GÖTEBORG & SVERIGE</span>
-                <h3 class="chapter-title">Född som VIC 64 – Handic Electronics Mästerdrag</h3>
-                <div class="chapter-body">
-                    <p>
-                        Det hela tog fart i Sverige under våren 1983. Det svenska företaget <strong>Handic Electronic
-                            AB</strong> tog in maskinen och lanserade den till en början under namnet <strong>VIC
-                            64</strong> (en hyllning till föregångaren VIC-20). Prislappen landade på 5 995 kronor – en
-                        ansenlig summa som krävde sparade slantar eller övertalning av föräldrar.
-                    </p>
-                    <p>
-                        Men när den berömda <strong>"Julhandeln 1983"</strong> drog igång slog Handic till med ett
-                        prisras ner till <strong>3 995 kr</strong>. Det blev startskottet för en folkrörelse. Barn och
-                        ungdomar över hela landet satt med glödande ögon framför tjock-TV:n, lyssnade på kassettdäckets
-                        gnissel och väntade på att ladda in spel från band och disketter.
-                    </p>
-                    <div class="quote-box">
-                        "Commodore 64 var den mest kända datorn man kunde möta. 100 000 svenskar hade den hemma – och
-                        bara ett år senare såldes otroliga 2,4 miljoner exemplar i världen."
-                    </div>
+            <!-- FÖRSÄLJNINGS-STATISTIK MED ANIMATION -->
+            <div class="c64-panel">
+              <div class="panel-header">
+                <span class="panel-title">EXPLOSIV FÖRSÄLJNING (1983 vs 1984)</span>
+              </div>
+              <div class="panel-body">
+                <div class="stat-box-container">
+                  <div class="stat-card">
+                    <div class="stat-number" id="statSweden">100 000</div>
+                    <div class="stat-label">SVERIGE (Totalt)</div>
+                    <div class="stat-desc">Varje hem och ungdomsgäng hade en C64.</div>
+                  </div>
+                  <div class="stat-card highlight">
+                    <div class="stat-number" id="statWorld">2 400 000</div>
+                    <div class="stat-label">GLOBALT ÅR 1984</div>
+                    <div class="stat-desc">Världens bäst säljande datormodell genom tiderna.</div>
+                  </div>
                 </div>
-            </article>
 
-            <!-- Kapitel 2 -->
-            <article class="chapter-card">
-                <div class="chapter-num">02</div>
-                <span class="chapter-tag">TEKNIKSPRÅNGET &bull; MÖT BOTTEN</span>
-                <h3 class="chapter-title">Från Kompis i Soffan till en Digital "Bot"</h3>
-                <div class="chapter-body">
-                    <p>
-                        Innan hemdatorerna intog vardagsrummen krävdes det i princip alltid en kompis bredvid sig med en
-                        joystick för att köra tvåspelarspel. Men så hände något banbrytande: <em>spelarfunktionerna
-                            började utvecklas så att en "Bot" – en tidig form av AI – kunde styra den andra
-                            spelaren</em>.
-                    </p>
-                    <p>
-                        Dåtidens botar kördes på en processor med under 1 megahertz klockfrekvens. Som vi elever
-                        reflekterar över idag:
-                    </p>
-                    <div class="quote-box">
-                        "Även om man hade kunnat fått denna funktion, så var det ändå inte alls utvecklat, så antagligen
-                        på deras tid, så gjorde denna 'Bot' ganska dåliga beslut – men vem vet, vi levde ju inte på den
-                        tiden! Men ända sen dess har det varit en tanke om att datorn skall bli smartare, lära sig
-                        spelet själv, och att AI också skulle bli bättre än människorna."
+                <div class="comparison-bar-graph">
+                  <div class="bar-group">
+                    <div class="bar-label">Sverige (100k)</div>
+                    <div class="bar-outer">
+                      <div class="bar-inner" style="width: 15%;"></div>
                     </div>
-                    <p>
-                        Och visst blev det så. Från stapplande slumptal och tafatta joystickrörelser på 80-talet till
-                        dagens neurala nätverk som krossar världsmästare i schack, Go och e-sport. Som citatet så
-                        träffande säger: <em>"Som vi nu vet, faktiskt hände – fy fan med dessa AI-modeller!"</em>.
-                    </p>
+                  </div>
+                  <div class="bar-group">
+                    <div class="bar-label">Världen 1984 (2.4M)</div>
+                    <div class="bar-outer">
+                      <div class="bar-inner bar-max" style="width: 100%;"></div>
+                    </div>
+                  </div>
                 </div>
-            </article>
-        </section>
 
-        <!-- SPELBART ARKADMINISPEL: MÖT BOTTEN (1983 vs 2026) -->
-        <section class="arcade-section" id="arcadeModule" aria-labelledby="gameHeading">
-            <div class="arcade-header">
-                <span class="section-tag">// SPELBAR ARKADSIMULATOR</span>
-                <h2 id="gameHeading">DUEL: MÖT BOTTEN</h2>
-                <p>Styr din gröna paddel med musen eller touch. Välj om du vill möta 1983 års fumliga C64-kod eller
-                    dagens överlägsna AI!</p>
+                <button class="c64-btn mini-btn" id="btnRecount">🔄 RÄKNA OM STATISTIK</button>
+              </div>
             </div>
 
-            <!-- Mode väljare -->
-            <div class="game-mode-bar" role="tablist" aria-label="Välj bot-läge">
-                <button class="mode-btn active-mode" id="mode1983Btn" onclick="selectGameMode('1983')">
-                    🕹️ 1983 C64 BOT (Klumpig & Ologisk)
+          </section>
+
+          <!-- SECTION 2: BOT-REVOLUTIONEN & SPEL MOT EN "AI" -->
+          <section class="c64-panel panel-bots">
+            <div class="panel-header">
+              <span class="panel-title">[ SPELARFUNKTIONERNA: NÄR "BOTEN" FÖDDES ]</span>
+              <span class="led-indicator yellow blink"></span>
+            </div>
+            <div class="panel-body">
+              <div class="bot-story-layout">
+                <div class="bot-story-text">
+                  <h3>Att möta en digital motståndare istället för kompisen</h3>
+                  <p>
+                    På 80-talet började spelutvecklarna bygga in funktioner så att man kunde spela även när kompisarna inte var där. 
+                    Man skapade <strong>“En Bot”</strong> – dåtidens föregångare till dagens Artificiella Intelligens (AI).
+                  </p>
+                  <p>
+                    Även om man hade fått denna funktion, var den inte alls utvecklad. 
+                    På deras tid gjorde denna "Bot" ofta ganska dåliga och märkliga beslut 
+                    <em>(men vem vet säkert, vi elever levde ju inte på den tiden!)</em>.
+                  </p>
+                  <p>
+                    Men ända sedan dess har visionen levt: 
+                    <strong>Tanken om att datorn alltid skulle bli smartare</strong>, lära sig spelet själv för hand – 
+                    och i slutändan bli bättre än människan. Som vi vet idag hände det faktiskt: 
+                    <span class="c64-yellow">schack, Go, datorspel och textmodeller – maskinen tog över mästartitlarna!</span>
+                  </p>
+                </div>
+                
+                <div class="bot-comparison-box">
+                  <div class="bot-side side-1983">
+                    <h4>🤖 1983: "C64-BOTEN"</h4>
+                    <ul>
+                      <li>Hårdkodade IF-THEN regler</li>
+                      <li>Minne: Max några kilobyte</li>
+                      <li>Gjorde slumpartade, klumpiga drag</li>
+                      <li>Kunde inte lära sig av misstag</li>
+                      <li>Kraschade vid syntaxfel</li>
+                    </ul>
+                  </div>
+                  <div class="bot-vs">VS</div>
+                  <div class="bot-side side-2026">
+                    <h4>🧠 2026: "SUPER-AI"</h4>
+                    <ul>
+                      <li>Triljoner parametrar & Neurala nät</li>
+                      <li>Tränad på miljontals partier</li>
+                      <li>Ser 50 drag in i framtiden</li>
+                      <li>Slår stormästare och människor lekande lätt</li>
+                      <li>Analyserar mänskligt beteende i realtid</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- SECTION 3: INTERACTIVE RETRO GAME: SPELA MOT 1983 BOT VS 2026 AI -->
+          <section class="c64-panel game-panel">
+            <div class="panel-header">
+              <span class="panel-title">🎮 INTERAKTIV SIMULATOR: "C64 TACTICAL DUEL"</span>
+              <span class="game-badge">SPELA MOT EN BOT</span>
+            </div>
+            <div class="panel-body">
+              <div class="game-intro">
+                <p>
+                  Välj vem du vill möta i detta klassiska C64-minispel (3-i-rad / Luffarschack). 
+                  Märk skillnaden mellan den klumpiga <strong>1983-boten</strong> (som gör tabbar och spottar ut BASIC-felkoder) 
+                  och den oslagbara <strong>2026-Super-AI:n</strong>!
+                </p>
+              </div>
+
+              <!-- BOT SELECTOR -->
+              <div class="bot-mode-selector">
+                <button class="mode-btn active" data-mode="1983" id="mode1983">
+                  <span class="btn-icon">👾</span>
+                  <div class="btn-txt">
+                    <strong>1983 VIC-64 DUMMY BOT</strong>
+                    <small>Gör konstiga misstag, tappar minnet</small>
+                  </div>
                 </button>
-                <button class="mode-btn modern" id="mode2026Btn" onclick="selectGameMode('2026')">
-                    🧠 2026 MODERN AI (Överlägsen & Snabb)
+                <button class="mode-btn" data-mode="2026" id="mode2026">
+                  <span class="btn-icon">⚡</span>
+                  <div class="btn-txt">
+                    <strong>2026 SUPER-AI MODEL</strong>
+                    <small>Blixtsnabb, analyserar allt, hånar dig</small>
+                  </div>
                 </button>
-            </div>
+              </div>
 
-            <!-- Canvas Viewport -->
-            <div class="game-viewport">
-                <div class="game-scoreboard">
-                    <div class="score-item">
-                        <span>MÄNNISKA (DU):</span>
-                        <span class="score-val" id="playerScore">0</span>
-                    </div>
-                    <div class="score-item" style="color:var(--c64-pink);">
-                        <span id="botScoreLabel">1983 BOT:</span>
-                        <span class="score-val" id="botScore">0</span>
-                    </div>
+              <!-- GAME ARENA -->
+              <div class="game-arena">
+                
+                <!-- Game Board -->
+                <div class="game-board-container">
+                  <div class="game-status" id="gameStatus">DIN TUR (SPELARE X) – VÄLJ EN RUTA</div>
+                  
+                  <div class="board-grid" id="boardGrid">
+                    <button class="cell" data-index="0"></button>
+                    <button class="cell" data-index="1"></button>
+                    <button class="cell" data-index="2"></button>
+                    <button class="cell" data-index="3"></button>
+                    <button class="cell" data-index="4"></button>
+                    <button class="cell" data-index="5"></button>
+                    <button class="cell" data-index="6"></button>
+                    <button class="cell" data-index="7"></button>
+                    <button class="cell" data-index="8"></button>
+                  </div>
+
+                  <div class="game-actions">
+                    <button class="c64-btn" id="btnResetGame">🔄 STARTA OM MATCH</button>
+                  </div>
                 </div>
 
-                <canvas id="pongCanvas" width="700" height="380"></canvas>
-
-                <!-- Bot Commentary box -->
-                <div class="bot-chatter-box">
-                    <span class="bot-avatar" id="botAvatarLabel">BOT 1983</span>
-                    <span class="bot-chatter-text" id="botChatterText">"READY. Väntar på serve... Jag har 64KB minne att
-                        tänka med!"</span>
+                <!-- Bot Log / Dialogue Box -->
+                <div class="bot-terminal-box">
+                  <div class="terminal-title">BOT PROCESSOR & SID-DIALOG:</div>
+                  <div class="terminal-logs" id="botLogs">
+                    <div class="log-line">> SYSTEM INIT... 6510 READY.</div>
+                    <div class="log-line">> BOT MOTSTÅNDARE: 1983 VIC-64 BOT LADDAD.</div>
+                    <div class="log-line">> "HEJ MÄNNISKA! JAG SKA FÖRSÖKA SPELA..."</div>
+                  </div>
+                  <div class="score-tracker">
+                    <span>MÄNNISKA (X): <strong id="scorePlayer">0</strong></span>
+                    <span>BOT (O): <strong id="scoreBot">0</strong></span>
+                    <span>OAVGJORT: <strong id="scoreDraw">0</strong></span>
+                  </div>
                 </div>
 
-                <!-- Game Controls -->
-                <div class="game-actions-bar">
-                    <button class="game-ctrl-btn" id="startResetGameBtn" onclick="resetGameMatch()">
-                        🔄 STARTA / ÅTERSTÄLL MATCH
-                    </button>
-                    <button class="game-ctrl-btn" id="toggleAiDiffBtn" onclick="cycleAiSpeed()">
-                        ⚡ HASTIGHET: NORMAL
-                    </button>
-                </div>
+              </div>
             </div>
-        </section>
+          </section>
 
-        <!-- ELEVENS REFLEKTIONER: MÄNNISKA VS MASKIN -->
-        <section aria-labelledby="reflectionHeading">
-            <div class="section-header">
-                <span class="section-tag">// ELEVENS EGNA TANKAR</span>
-                <h2 class="section-title" id="reflectionHeading">Fascinationen & Det Nya Beroendet</h2>
+          <!-- SECTION 4: ELEVENS TANKAR OCH REFLEKTIONER -->
+          <section class="c64-panel reflection-panel">
+            <div class="panel-header">
+              <span class="panel-title">[ ELEVENS REFLEKTION: TRÄNAREN SOM ALDRIG BLEV TRÖTT ]</span>
             </div>
+            <div class="panel-body">
+              
+              <div class="reflection-quote-card">
+                <div class="quote-mark">“</div>
+                <blockquote class="reflection-quote">
+                  "Mina tankar om detta är att det är en väldigt fascinerande sak. 
+                  Alltså, det är ganska coolt hur även på 80-talet, allt detta kunde utvecklas så snabbt. 
+                  Man skulle även kunna säga att det är som en lärare/tränare som inte kunde bli trött alls, 
+                  men samtidigt kunde man bli väldigt beroende av detta – 
+                  om man ville köra mot sin vän, fanns det en chans att folket valde AI över riktiga personer."
+                </blockquote>
+              </div>
 
-            <div class="reflection-grid">
-                <!-- Kort 1 -->
-                <article class="reflection-card">
-                    <span class="reflection-icon">🎓</span>
-                    <h3 class="reflection-title">Den Outtröttlige Läraren</h3>
-                    <p class="reflection-text">
-                        Det är otroligt fascinerande hur snabbt allting kunde utvecklas redan på 80-talet. Datorn blev
-                        som en tränare eller lärare som <em>aldrig kunde bli trött</em>. Den klagade aldrig, behövde
-                        ingen paus och var alltid redo för ännu en omgång klockan två på natten.
-                    </p>
-                </article>
-
-                <!-- Kort 2 -->
-                <article class="reflection-card">
-                    <span class="reflection-icon">⚠️</span>
-                    <h3 class="reflection-title">Beroendet & Den Bortvalda Vännen</h3>
-                    <p class="reflection-text">
-                        Men medaljen hade en baksida: man kunde bli väldigt beroende av maskinen. När botten alltid
-                        fanns till hands och blev allt mer underhållande, fanns det plötsligt en risk att <em>folk valde
-                            AI:n framför sina riktiga kompisar</em>. En tankeställare som är ännu mer aktuell idag med
-                        dagens AI-modeller.
-                    </p>
-                </article>
-
-                <!-- Kort 3 -->
-                <article class="reflection-card">
-                    <span class="reflection-icon">🚀</span>
-                    <h3 class="reflection-title">Maskinen Som Lärde Sig Själv</h3>
-                    <p class="reflection-text">
-                        Tanken som såddes 1983 – att datorn en vacker dag skulle lära sig spelet själv för hand och
-                        överträffa människan – har idag blivit verklighet. De enkla IF-satserna i BASIC har bytts ut mot
-                        miljarder parametrar och djupinlärning.
-                    </p>
-                </article>
-            </div>
-
-            <!-- INTERAKTIV OMRÖSTNING: KOMPIS VS AI -->
-            <article class="poll-card">
-                <h3 class="poll-title">Vem spelar du helst mot idag?</h3>
-                <p class="poll-sub">Klicka på ett alternativ och se hur andra elever och gamers har röstat!</p>
-
-                <div class="poll-options">
-                    <button class="poll-btn" id="voteHumanBtn" onclick="submitPollVote('human')">
-                        <span class="emoji">👥</span>
-                        <span>En Riktig Kompis</span>
-                        <small style="color:var(--c64-cyan); font-weight:normal;">För gemenskap och skratt</small>
-                    </button>
-
-                    <button class="poll-btn" id="voteAiBtn" onclick="submitPollVote('ai')">
-                        <span class="emoji">🤖</span>
-                        <span>En Smart AI / Bot</span>
-                        <small style="color:var(--c64-pink); font-weight:normal;">Outtröttlig & alltid
-                            tillgänglig</small>
-                    </button>
+              <div class="reflection-insights-grid">
+                
+                <div class="insight-card">
+                  <div class="insight-icon">⏳</div>
+                  <h4>Tränaren Som Aldrig Sover</h4>
+                  <p>
+                    Till skillnad från en kompis som behövde gå hem och äta middag eller sova, 
+                    var Commodore 64 alltid vaken. Den väntade troget vid tangentbordet, redo för 
+                    nästa parti Schack, Pong eller International Karate.
+                  </p>
                 </div>
 
-                <div class="poll-bars" id="pollResultsBox">
-                    <div class="poll-bar-item">
-                        <div class="poll-bar-header">
-                            <span>Riktig Kompis</span>
-                            <strong id="humanPercent">68%</strong>
-                        </div>
-                        <div class="poll-track">
-                            <div class="poll-fill human" id="humanBar" style="width: 68%;"></div>
-                        </div>
-                    </div>
-
-                    <div class="poll-bar-item">
-                        <div class="poll-bar-header">
-                            <span>AI / Bot</span>
-                            <strong id="aiPercent">32%</strong>
-                        </div>
-                        <div class="poll-track">
-                            <div class="poll-fill ai" id="aiBar" style="width: 32%;"></div>
-                        </div>
-                    </div>
+                <div class="insight-card">
+                  <div class="insight-icon">🌀</div>
+                  <h4>Beroendet & Valet av Motståndare</h4>
+                  <p>
+                    Här såddes de första fröna till skärmberoende. 
+                    Varför ringa på hos grannen på cykeln när man kunde starta en omedelbar match 
+                    mot datorn? Maskinen blev den perfekta motståndaren som aldrig klagade.
+                  </p>
                 </div>
-            </article>
-        </section>
 
-        <!-- C64 BASIC INTERAKTIV MINIKONSOL -->
-        <section class="terminal-section" aria-labelledby="terminalHeading">
-            <div class="terminal-title">
-                <span id="terminalHeading">📟 C64 BASIC V2 INTERAKTIV PROMPT</span>
-                <span style="font-size:0.65rem; color:var(--c64-green);">STATUS: OK</span>
+                <div class="insight-card">
+                  <div class="insight-icon">🚀</div>
+                  <h4>Från 1983 till Dagens AI-Modeller</h4>
+                  <p>
+                    På bara 40 år gick vi från 8-bitars enkla tabbar till att moderna AI-modeller 
+                    löser avancerad kodning, analyserar världsekonomin och skapar konst. 
+                    Det som började med 64 kilobyte minne förändrade hela mänskligheten.
+                  </p>
+                </div>
+
+              </div>
+
             </div>
+          </section>
 
-            <div class="terminal-output" id="terminalOutput">
-                <div class="term-out-line">COMMODORE 64 BASIC V2. SKRIV ETT KOMMANDO ELLER KLICKA PÅ SNABBKNAPPARNA
-                    NEDAN:</div>
-                <div class="term-out-line sys-reply">TIPS: Skriv HELP, STATS, BOT, HANDIC eller RUN.</div>
+          <!-- INTERACTIVE SECTION 5: VÄLJ MOTSTÅNDARE DILEMMA-SIMULATOR -->
+          <section class="c64-panel dilemma-panel">
+            <div class="panel-header">
+              <span class="panel-title">VALET: MÄNNISKA ELLER MASKIN? (INTERAKTIVT DILEMMA)</span>
             </div>
+            <div class="panel-body">
+              <p>Det är fredagskväll 1983 (eller 2026). Vad väljer du att göra?</p>
+              
+              <div class="dilemma-choices">
+                <button class="dilemma-btn" id="choiceFriend">
+                  <span class="d-icon">🚲</span>
+                  <div class="d-txt">
+                    <strong>1. Ringa på hos kompisen</strong>
+                    <small>Cykla bort i regnet, snacka, käka chips, spela tillsammans</small>
+                  </div>
+                </button>
 
-            <div class="terminal-input-row">
-                <span class="terminal-prompt">READY.&gt;</span>
-                <input type="text" class="terminal-input" id="terminalInput" placeholder="Skriv kommando här..."
-                    autocomplete="off" spellcheck="false">
+                <button class="dilemma-btn" id="choiceBot">
+                  <span class="d-icon">🤖</span>
+                  <div class="d-txt">
+                    <strong>2. Stanna inne med Boten</strong>
+                    <small>Tryck på 'RUN', träna ensam mot maskinen hela natten</small>
+                  </div>
+                </button>
+              </div>
+
+              <div class="dilemma-result" id="dilemmaResult" style="display: none;">
+                <!-- Filled dynamically by JS -->
+              </div>
             </div>
+          </section>
 
-            <div class="terminal-quick-buttons">
-                <button class="term-btn" onclick="executeTermCmd('STATS')">📊 STATS</button>
-                <button class="term-btn" onclick="executeTermCmd('HANDIC')">🇸🇪 HANDIC</button>
-                <button class="term-btn" onclick="executeTermCmd('BOT')">🤖 BOT-INFO</button>
-                <button class="term-btn" onclick="executeTermCmd('SOUND')">🎵 SID LJUD</button>
-                <button class="term-btn" onclick="executeTermCmd('CLEAR')">🧹 RENSA</button>
+          <!-- SECTION 6: INTERACTIVE C64 BASIC TERMINAL -->
+          <section class="c64-panel terminal-panel">
+            <div class="panel-header">
+              <span class="panel-title">INTERAKTIV C64 BASIC KOMMANDO-TOLK</span>
+              <span class="prompt-badge">SKRIV ETT KOMMANDO</span>
             </div>
-        </section>
+            <div class="panel-body">
+              <p class="terminal-guide">
+                Testa att skriva C64 BASIC-kommandon! Prova t.ex: 
+                <code>HELP</code>, <code>LIST</code>, <code>RUN</code>, <code>1983</code>, <code>POKE 53280,0</code>, <code>BEEP</code>, <code>AI</code>, <code>CLEAR</code>
+              </p>
 
-    </main>
+              <div class="interactive-cli" id="cliOutput">
+                <div class="cli-row">COMMODORE 64 BASIC V2 PROMPT ACTIVE.</div>
+                <div class="cli-row">SKRIV 'HELP' FÖR EN LISTA MED HEMLIGA KOMMANDON.</div>
+              </div>
 
-    <!-- FOOTER -->
-    <footer>
-        <div class="container">
-            <div class="footer-tribute">
-                COMMODORE 64 &bull; HANDIC ELECTRONIC AB &bull; 1983-2026
+              <form id="cliForm" class="cli-input-form">
+                <span class="cli-prompt">READY.<br>&gt;</span>
+                <input type="text" id="cliInput" autocomplete="off" spellcheck="false" placeholder="Skriv kommando här...">
+                <button type="submit" class="c64-btn mini-btn">ENTER</button>
+              </form>
             </div>
-            <p>
-                Skapad med kärlek till svensk datorhistoria och den filosofiska resan från 80-talets första botar till
-                dagens AI.
-            </p>
-            <p style="margin-top:8px; font-size:0.8rem;">
-                Källor & Historik: Handic Electronic AB, VIC 64, Datorfebern i Sverige, Commodore Business Machines.
-            </p>
-        </div>
-    </footer>
+          </section>
 
-    <!-- JAVASCRIPT: Ljud, Spel, Kalkylator och Interaktioner -->
-    <script>
-        /* ==========================================================
-           1. WEB AUDIO API - 8-BIT SID SYNTHESIZER
-           ========================================================== */
-        let audioCtx = null;
-        let soundEnabled = false;
+          <!-- FOOTER -->
+          <footer class="c64-footer">
+            <div class="footer-grid">
+              <div>
+                <p><strong>COMMODORE 64 TRIBUTE & ESSÄ</strong></p>
+                <p>Baserat på historien om Handic Electronic AB, VIC 64, prissänkningen 1983 och botarnas evolution.</p>
+              </div>
+              <div class="footer-credits">
+                <p>SYSTEM: 6510 CPU / SID 6581 SOUND / VIC-II GRAPHICS</p>
+                <p>© 1983–2026 RETRO TECH & AI LAB</p>
+              </div>
+            </div>
+          </footer>
 
-        function initAudio() {
-            if (!audioCtx) {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContext();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
+        </div> <!-- End screen-content -->
 
-        function playSidTone(freq, type = 'square', duration = 0.12, vol = 0.15) {
-            if (!soundEnabled || !audioCtx) return;
-            try {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = type;
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      </main> <!-- End crt-screen -->
 
-                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    </div> <!-- End crt-screen-bezel -->
+  </div> <!-- End crt-monitor-container -->
 
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                osc.start();
-                osc.stop(audioCtx.currentTime + duration);
-            } catch (e) {
-                console.warn("Audio error:", e);
-            }
-        }
-
-        function playBleepSound() { playSidTone(440, 'square', 0.08, 0.12); }
-        function playHitSound() { playSidTone(220, 'triangle', 0.09, 0.18); }
-        function playScoreSound() {
-            playSidTone(523.25, 'square', 0.1, 0.15);
-            setTimeout(() => playSidTone(659.25, 'square', 0.12, 0.15), 100);
-            setTimeout(() => playSidTone(783.99, 'square', 0.25, 0.18), 200);
-        }
-        function playErrorSound() {
-            playSidTone(130, 'sawtooth', 0.25, 0.2);
-        }
-
-        // Toggle Sound Button
-        const toggleSoundBtn = document.getElementById('toggleSoundBtn');
-        const soundLed = document.getElementById('soundLed');
-        toggleSoundBtn.addEventListener('click', () => {
-            initAudio();
-            soundEnabled = !soundEnabled;
-            if (soundEnabled) {
-                soundLed.classList.add('on');
-                toggleSoundBtn.innerHTML = '<span class="led-dot on"></span> 🔊 LJUD: PÅ';
-                toggleSoundBtn.classList.add('active');
-                playScoreSound();
-            } else {
-                soundLed.classList.remove('on');
-                toggleSoundBtn.innerHTML = '<span class="led-dot"></span> 🔇 LJUD: AV';
-                toggleSoundBtn.classList.remove('active');
-            }
-        });
-
-        // Toggle CRT Filter Button
-        const toggleCrtBtn = document.getElementById('toggleCrtBtn');
-        const crtLed = document.getElementById('crtLed');
-        toggleCrtBtn.addEventListener('click', () => {
-            document.body.classList.toggle('crt-active');
-            const isActive = document.body.classList.contains('crt-active');
-            if (isActive) {
-                crtLed.classList.add('on');
-                toggleCrtBtn.innerHTML = '<span class="led-dot on"></span> 📺 CRT: PÅ';
-                toggleCrtBtn.classList.add('active');
-                playBleepSound();
-            } else {
-                crtLed.classList.remove('on');
-                toggleCrtBtn.innerHTML = '<span class="led-dot"></span> 📺 CRT: AV';
-                toggleCrtBtn.classList.remove('active');
-            }
-        });
-
-        /* ==========================================================
-           2. AMBIENT BACKGROUND STARS & PARTICLES
-           ========================================================== */
-        const canvasBg = document.getElementById('ambient-canvas');
-        const ctxBg = canvasBg.getContext('2d');
-        let stars = [];
-
-        function resizeBgCanvas() {
-            canvasBg.width = window.innerWidth;
-            canvasBg.height = window.innerHeight;
-            stars = [];
-            const numStars = Math.floor((canvasBg.width * canvasBg.height) / 9000);
-            for (let i = 0; i < numStars; i++) {
-                stars.push({
-                    x: Math.random() * canvasBg.width,
-                    y: Math.random() * canvasBg.height,
-                    size: Math.random() < 0.8 ? 1.5 : 3,
-                    speed: Math.random() * 0.4 + 0.1,
-                    color: Math.random() > 0.5 ? '#6c5eb5' : '#5ce1e6',
-                    alpha: Math.random() * 0.7 + 0.2
-                });
-            }
-        }
-
-        function renderBg() {
-            ctxBg.clearRect(0, 0, canvasBg.width, canvasBg.height);
-            for (let s of stars) {
-                s.y += s.speed;
-                if (s.y > canvasBg.height) {
-                    s.y = 0;
-                    s.x = Math.random() * canvasBg.width;
-                }
-                ctxBg.fillStyle = s.color;
-                ctxBg.globalAlpha = s.alpha;
-                ctxBg.fillRect(Math.floor(s.x), Math.floor(s.y), s.size, s.size);
-            }
-            ctxBg.globalAlpha = 1;
-            requestAnimationFrame(renderBg);
-        }
-
-        window.addEventListener('resize', resizeBgCanvas);
-        resizeBgCanvas();
-        renderBg();
-
-        /* ==========================================================
-           3. INTERACTIVE INFLATION & PRICE CALCULATOR
-           ========================================================== */
-        const priceSlider = document.getElementById('priceSlider');
-        const sliderPriceLabel = document.getElementById('sliderPriceLabel');
-        const adjustedPriceDisplay = document.getElementById('adjustedPriceDisplay');
-        const techCompareDisplay = document.getElementById('techCompareDisplay');
-
-        function updateCalculator() {
-            const p = parseInt(priceSlider.value, 10);
-            sliderPriceLabel.textContent = p.toLocaleString('sv-SE') + ' kr';
-            // Inflation factor ~2.98 from 1983 to 2026 based on Swedish KPI
-            const adjusted = Math.round(p * 2.98);
-            adjustedPriceDisplay.textContent = '~ ' + adjusted.toLocaleString('sv-SE') + ' kr';
-
-            if (p === 5995) {
-                techCompareDisplay.textContent = "Det officiella lanseringspriset för VIC 64 våren 1983 av Handic!";
-            } else if (p === 3995) {
-                techCompareDisplay.textContent = "Det sänkta priset under julhandeln 1983 som skapade datorhysterin i Sverige!";
-            } else {
-                techCompareDisplay.textContent = `För 64 KB minne! I dagens penningvärde motsvarar detta en modern high-end dator eller flaggskeppsmobil.`;
-            }
-        }
-
-        priceSlider.addEventListener('input', () => {
-            updateCalculator();
-            playBleepSound();
-        });
-        updateCalculator();
-
-        /* ==========================================================
-           4. RETRO ARCADE PONG: MÖT BOTTEN (1983 vs 2026)
-           ========================================================== */
-        const pCanvas = document.getElementById('pongCanvas');
-        const pCtx = pCanvas.getContext('2d');
-
-        let currentMode = '1983'; // '1983' or '2026'
-        let playerScore = 0;
-        let botScore = 0;
-        let ball = { x: 350, y: 190, vx: 4.5, vy: 3, radius: 7 };
-        let playerPaddle = { x: 25, y: 140, w: 12, h: 80, speed: 8 };
-        let botPaddle = { x: 663, y: 140, w: 12, h: 80, speed: 3.2 };
-        let isGameRunning = true;
-        let aiSpeedMultiplier = 1.0;
-
-        const botPhrases1983 = [
-            "?SYNTAX ERROR IN LINE 40: MISSADE BOLLEN!",
-            "*BEEP* TÄNKER... 1 MHz ÄR ÖVERBELASTAD!",
-            "Hoppsan! Min algoritm på 64KB råkade räkna fel!",
-            "Laddar kassettband... vänta lite!",
-            "Gjorde jag ett dåligt beslut? Jag är ju bara en 80-talsbot!",
-            "Spelar du hellre mot din kompis Kalle istället för mig?"
-        ];
-
-        const botPhrases2026 = [
-            "[NEURAL NET]: Jag förutsåg din studs med 99.8% precision.",
-            "[LLM 2026]: Tränad på 10 000 000 matcher. Människan är förutsägbar.",
-            "[DEEP LEARNING]: Justerar mina vikter i realtid. Du har ingen chans!",
-            "Fy fan med dessa AI-modeller, eller hur? Du hinner inte med!",
-            "[GPT-SPEED]: Beräknade optimal vinkel på 0.001 millisekunder."
-        ];
-
-        function selectGameMode(mode) {
-            currentMode = mode;
-            const m83 = document.getElementById('mode1983Btn');
-            const m26 = document.getElementById('mode2026Btn');
-            const avatar = document.getElementById('botAvatarLabel');
-            const scoreLabel = document.getElementById('botScoreLabel');
-
-            if (mode === '1983') {
-                m83.classList.add('active-mode');
-                m26.classList.remove('active-mode');
-                avatar.textContent = 'BOT 1983';
-                avatar.className = 'bot-avatar';
-                scoreLabel.textContent = '1983 BOT:';
-                botPaddle.speed = 3.2 * aiSpeedMultiplier;
-                botPaddle.h = 80;
-                setBotChatter("Läge aktiverat: 1983 C64-Bot. Gör ofta knasiga misstag!");
-            } else {
-                m26.classList.add('active-mode');
-                m83.classList.remove('active-mode');
-                avatar.textContent = 'AI 2026';
-                avatar.className = 'bot-avatar modern';
-                scoreLabel.textContent = '2026 AI:';
-                botPaddle.speed = 6.4 * aiSpeedMultiplier;
-                botPaddle.h = 95;
-                setBotChatter("[NEURAL AI ONLINE]: Modell aktiverad. Bered dig på förlust.");
-            }
-            playBleepSound();
-        }
-
-        function setBotChatter(text) {
-            document.getElementById('botChatterText').textContent = text;
-        }
-
-        function cycleAiSpeed() {
-            if (aiSpeedMultiplier === 1.0) {
-                aiSpeedMultiplier = 1.4;
-                document.getElementById('toggleAiDiffBtn').textContent = "⚡ HASTIGHET: SNABB";
-            } else if (aiSpeedMultiplier === 1.4) {
-                aiSpeedMultiplier = 1.8;
-                document.getElementById('toggleAiDiffBtn').textContent = "⚡ HASTIGHET: TURBO";
-            } else {
-                aiSpeedMultiplier = 1.0;
-                document.getElementById('toggleAiDiffBtn').textContent = "⚡ HASTIGHET: NORMAL";
-            }
-            selectGameMode(currentMode);
-        }
-
-        function resetGameMatch() {
-            playerScore = 0;
-            botScore = 0;
-            document.getElementById('playerScore').textContent = '0';
-            document.getElementById('botScore').textContent = '0';
-            resetBall();
-            setBotChatter("Ny match startad! Ge järnet!");
-            playScoreSound();
-        }
-
-        function resetBall(servingToPlayer = false) {
-            ball.x = pCanvas.width / 2;
-            ball.y = pCanvas.height / 2;
-            const speed = 4.8 * (currentMode === '2026' ? 1.25 : 1.0);
-            ball.vx = (servingToPlayer ? -1 : 1) * speed;
-            ball.vy = (Math.random() > 0.5 ? 1 : -1) * (2.5 + Math.random() * 2);
-        }
-
-        // Mouse / Touch paddle tracking
-        pCanvas.addEventListener('mousemove', (e) => {
-            const rect = pCanvas.getBoundingClientRect();
-            const scaleY = pCanvas.height / rect.height;
-            const mouseY = (e.clientY - rect.top) * scaleY;
-            playerPaddle.y = Math.max(10, Math.min(pCanvas.height - playerPaddle.h - 10, mouseY - playerPaddle.h / 2));
-        });
-
-        pCanvas.addEventListener('touchmove', (e) => {
-            if (e.touches.length > 0) {
-                const rect = pCanvas.getBoundingClientRect();
-                const scaleY = pCanvas.height / rect.height;
-                const touchY = (e.touches[0].clientY - rect.top) * scaleY;
-                playerPaddle.y = Math.max(10, Math.min(pCanvas.height - playerPaddle.h - 10, touchY - playerPaddle.h / 2));
-                e.preventDefault();
-            }
-        }, { passive: false });
-
-        function updateGame() {
-            if (!isGameRunning) return;
-
-            // Ball movement
-            ball.x += ball.vx;
-            ball.y += ball.vy;
-
-            // Wall collision (top / bottom)
-            if (ball.y - ball.radius <= 0) {
-                ball.y = ball.radius;
-                ball.vy = -ball.vy;
-                playHitSound();
-            } else if (ball.y + ball.radius >= pCanvas.height) {
-                ball.y = pCanvas.height - ball.radius;
-                ball.vy = -ball.vy;
-                playHitSound();
-            }
-
-            // Player paddle collision
-            if (
-                ball.x - ball.radius <= playerPaddle.x + playerPaddle.w &&
-                ball.x + ball.radius >= playerPaddle.x &&
-                ball.y >= playerPaddle.y &&
-                ball.y <= playerPaddle.y + playerPaddle.h
-            ) {
-                ball.vx = Math.abs(ball.vx) * 1.04;
-                const hitOffset = (ball.y - (playerPaddle.y + playerPaddle.h / 2)) / (playerPaddle.h / 2);
-                ball.vy = hitOffset * 5.5;
-                playHitSound();
-            }
-
-            // Bot paddle collision
-            if (
-                ball.x + ball.radius >= botPaddle.x &&
-                ball.x - ball.radius <= botPaddle.x + botPaddle.w &&
-                ball.y >= botPaddle.y &&
-                ball.y <= botPaddle.y + botPaddle.h
-            ) {
-                ball.vx = -Math.abs(ball.vx) * 1.04;
-                const hitOffset = (ball.y - (botPaddle.y + botPaddle.h / 2)) / (botPaddle.h / 2);
-                ball.vy = hitOffset * 5.5;
-                playHitSound();
-            }
-
-            // Bot AI logic
-            const botCenter = botPaddle.y + botPaddle.h / 2;
-            if (currentMode === '1983') {
-                // 1983 Bot: Slow, introduces random glitches and lag
-                const jitter = Math.sin(Date.now() / 250) * 28;
-                if (Math.random() < 0.08) {
-                    // occasional lag stutter
-                } else if (ball.y > botCenter + 15 + jitter) {
-                    botPaddle.y += botPaddle.speed;
-                } else if (ball.y < botCenter - 15 + jitter) {
-                    botPaddle.y -= botPaddle.speed;
-                }
-            } else {
-                // 2026 AI: Predictive, calculates intersection when ball approaches
-                let targetY = ball.y;
-                if (ball.vx > 0) {
-                    // predictive estimation
-                    const dist = botPaddle.x - ball.x;
-                    targetY = ball.y + (ball.vy / ball.vx) * dist;
-                    while (targetY < 0 || targetY > pCanvas.height) {
-                        if (targetY < 0) targetY = -targetY;
-                        if (targetY > pCanvas.height) targetY = 2 * pCanvas.height - targetY;
-                    }
-                }
-                if (targetY > botCenter + 6) {
-                    botPaddle.y += botPaddle.speed;
-                } else if (targetY < botCenter - 6) {
-                    botPaddle.y -= botPaddle.speed;
-                }
-            }
-
-            // Clamp bot paddle inside canvas
-            botPaddle.y = Math.max(5, Math.min(pCanvas.height - botPaddle.h - 5, botPaddle.y));
-
-            // Scoring
-            if (ball.x < 0) {
-                // Bot scored
-                botScore++;
-                document.getElementById('botScore').textContent = botScore;
-                playErrorSound();
-                if (currentMode === '1983') {
-                    setBotChatter("Haha! Till och med min gamla kod lyckades göra mål!");
-                } else {
-                    setBotChatter(botPhrases2026[Math.floor(Math.random() * botPhrases2026.length)]);
-                }
-                resetBall(true);
-            } else if (ball.x > pCanvas.width) {
-                // Player scored
-                playerScore++;
-                document.getElementById('playerScore').textContent = playerScore;
-                playScoreSound();
-                if (currentMode === '1983') {
-                    setBotChatter(botPhrases1983[Math.floor(Math.random() * botPhrases1983.length)]);
-                } else {
-                    setBotChatter("[VARNING]: Mänsklig seger registrerad. Omkalibrerar neurala nätverket...");
-                }
-                resetBall(false);
-            }
-        }
-
-        function renderGame() {
-            // Clear canvas
-            pCtx.fillStyle = '#080614';
-            pCtx.fillRect(0, 0, pCanvas.width, pCanvas.height);
-
-            // Center dotted retro net
-            pCtx.strokeStyle = 'rgba(108, 94, 181, 0.4)';
-            pCtx.lineWidth = 4;
-            pCtx.setLineDash([8, 8]);
-            pCtx.beginPath();
-            pCtx.moveTo(pCanvas.width / 2, 0);
-            pCtx.lineTo(pCanvas.width / 2, pCanvas.height);
-            pCtx.stroke();
-            pCtx.setLineDash([]);
-
-            // Draw Player Paddle (Green)
-            pCtx.fillStyle = '#5cdb95';
-            pCtx.shadowColor = '#5cdb95';
-            pCtx.shadowBlur = 10;
-            pCtx.fillRect(playerPaddle.x, playerPaddle.y, playerPaddle.w, playerPaddle.h);
-
-            // Draw Bot Paddle (Cyan for 1983, Neon Pink for 2026)
-            if (currentMode === '1983') {
-                pCtx.fillStyle = '#5ce1e6';
-                pCtx.shadowColor = '#5ce1e6';
-            } else {
-                pCtx.fillStyle = '#ff3377';
-                pCtx.shadowColor = '#ff3377';
-            }
-            pCtx.shadowBlur = 12;
-            pCtx.fillRect(botPaddle.x, botPaddle.y, botPaddle.w, botPaddle.h);
-
-            // Draw Ball (Amber Yellow)
-            pCtx.fillStyle = '#ffd700';
-            pCtx.shadowColor = '#ffd700';
-            pCtx.shadowBlur = 14;
-            pCtx.beginPath();
-            pCtx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-            pCtx.fill();
-            pCtx.shadowBlur = 0; // reset
-        }
-
-        function gameLoop() {
-            updateGame();
-            renderGame();
-            requestAnimationFrame(gameLoop);
-        }
-        gameLoop();
-
-        /* ==========================================================
-           5. INTERACTIVE POLL SYSTEM
-           ========================================================== */
-        let humanVotes = 342;
-        let aiVotes = 161;
-        let hasVoted = false;
-
-        function submitPollVote(choice) {
-            if (hasVoted) return;
-            hasVoted = true;
-
-            if (choice === 'human') {
-                humanVotes++;
-                document.getElementById('voteHumanBtn').classList.add('voted');
-            } else {
-                aiVotes++;
-                document.getElementById('voteAiBtn').classList.add('voted');
-            }
-
-            const total = humanVotes + aiVotes;
-            const hPercent = Math.round((humanVotes / total) * 100);
-            const aPercent = 100 - hPercent;
-
-            document.getElementById('humanPercent').textContent = hPercent + '%';
-            document.getElementById('humanBar').style.width = hPercent + '%';
-            document.getElementById('aiPercent').textContent = aPercent + '%';
-            document.getElementById('aiBar').style.width = aPercent + '%';
-
-            playScoreSound();
-        }
-
-        /* ==========================================================
-           6. C64 BASIC INTERACTIVE TERMINAL SIMULATOR
-           ========================================================== */
-        const terminalInput = document.getElementById('terminalInput');
-        const terminalOutput = document.getElementById('terminalOutput');
-
-        function printTermLine(text, cssClass = '') {
-            const line = document.createElement('div');
-            line.className = 'term-out-line ' + cssClass;
-            line.textContent = text;
-            terminalOutput.appendChild(line);
-            terminalOutput.scrollTop = terminalOutput.scrollHeight;
-        }
-
-        function executeTermCmd(cmd) {
-            const clean = cmd.trim().toUpperCase();
-            if (!clean) return;
-
-            printTermLine('> ' + clean, 'user-cmd');
-            playBleepSound();
-
-            setTimeout(() => {
-                switch (clean) {
-                    case 'HELP':
-                        printTermLine("TILLGÄNGLIGA KOMMANDON: STATS, HANDIC, BOT, SOUND, RUN, CLEAR, 10 PRINT", "sys-reply");
-                        break;
-                    case 'STATS':
-                        printTermLine("C64 STATS: 100 000 SÅLDA I SVERIGE (1983-84). 2.4 MILJONER GLOBALT (1984).", "sys-reply");
-                        printTermLine("LANSERINGSPRIS: 5 995 KR. JULHANDELN: 3 995 KR.", "sys-reply");
-                        break;
-                    case 'HANDIC':
-                        printTermLine("HANDIC ELECTRONIC AB: Svensk distributör och pionjär som lanserade VIC 64 våren 1983.", "sys-reply");
-                        break;
-                    case 'BOT':
-                        printTermLine("BOT REVOLUTION: På 80-talet kördes enkla if-satser. Idag styr neurala nätverk världen!", "sys-reply");
-                        break;
-                    case 'RUN':
-                        printTermLine("RUNNING PROGRAM: LOAD 'AI_DUEL',8,1 ... READY!", "sys-reply");
-                        document.getElementById('arcadeModule').scrollIntoView({ behavior: 'smooth' });
-                        break;
-                    case 'SOUND':
-                        printTermLine("TESTAR SID 6581 CHIP LJUD...", "sys-reply");
-                        if (!soundEnabled) {
-                            toggleSoundBtn.click();
-                        } else {
-                            playScoreSound();
-                        }
-                        break;
-                    case 'CLEAR':
-                        terminalOutput.innerHTML = '';
-                        printTermLine("COMMODORE 64 BASIC V2. SKÄRM RENSAAD. READY.", "sys-reply");
-                        break;
-                    default:
-                        if (clean.includes('PRINT')) {
-                            const msg = clean.replace(/.*PRINT\s*"?/, '').replace(/"?$/, '');
-                            printTermLine(msg || "SYNTAX ERROR", "sys-reply");
-                        } else {
-                            printTermLine(`?SYNTAX ERROR I KOMMANDO "${clean}". SKRIV HELP FÖR TIPS.`, "sys-reply");
-                        }
-                        break;
-                }
-            }, 80);
-        }
-
-        terminalInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                executeTermCmd(terminalInput.value);
-                terminalInput.value = '';
-            }
-        });
-    </script>
+  <!-- SOUND SYNTHESIZER AND INTERACTION SCRIPT -->
+  <script src="script.js"></script>
 </body>
-
 </html>
